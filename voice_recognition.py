@@ -45,7 +45,7 @@ class StrWriter(io.FileIO):
 
         self.write(bytes(str(self.currentChunk)+"\n",ENCODING))
         self.write(time_str)
-        self.write(bytes(sentence+"\n",ENCODING))
+        self.write(bytes(sentence+"\n\n",ENCODING))
         self.currentChunk += 1
 
 
@@ -67,48 +67,49 @@ class CutOut(AudioFileClip, sr.AudioSource):
             L), self.nchannels, self.SAMPLE_WIDTH, self.duration, self.fps,)
         return super().__enter__()
 
-    def getSubtitles(self, filename=None):
+    def getSubtitles(self, outName=None,phrase_time_limit=30,timeout=1,fix_time=False):
         lastTime = orgTime = datetime(100, 1, 1, 0, 0, 0)+timedelta(seconds=self.start)
-        if not filename:
-            filename = os.path.splitext(self.filename)[0]+".srt"
+        if not outName:
+            outName = os.path.splitext(self.filename)[0]+".srt"
         progressBar=createProgressBar(total=self.duration)
         currentSecond=0
-        with StrWriter(filename, "w") as f:
+        old_res=""
+        old_data=b""
+        with StrWriter(outName, "w") as f:
             with self as audioFile:
                 while True:
-                    res = ""
+                    
                     try:
-                        print("START_SECONDS: ",currentSecond/60)
                         data: sr.AudioData = listener.listen(
-                            audioFile, timeout=1,)
+                            audioFile, timeout=timeout,phrase_time_limit=phrase_time_limit)
+                        data.frame_data=old_data+data.frame_data
                         if self.stream.currentFrame>self.stream.numFrames:
                             break
-                        currentSecond = int(self.stream.currentFrame*(1/self.fps))
-                        print("SENDING DATA :",currentSecond/60)
-                        res = listener.recognize_google(data)
+                        res:str = listener.recognize_google(data)
+                        if fix_time and res and res.replace(" ","") !=old_res.replace(" ",""):
+                            print("res detected")
+                            old_res+=res+" "
+                            old_data=data.frame_data
+                            continue
                     except sr.UnknownValueError:
-                        print("unknown audio")
+                        pass
                     except sr.WaitTimeoutError:
-                        print("time out")
+                        pass
                     except Exception as e:
                         print(str(e))
+                    if (fix_time): 
+                        res = old_res
+                        
+                    currentSecond = int(self.stream.currentFrame*(1/self.fps))
                     time = orgTime+timedelta(seconds=currentSecond)
                     if res:
                         print("add subtitle")
                         f.add_time(res, lastTime, time)
+                    old_data=b""
+                    old_res=""
                     progressBar(currentSecond)
                     lastTime = time
         print("\n finished")
 
 
-def main():
-    # 'wav':  {'type':'audio', 'codec':['pcm_s16le', 'pcm_s24le', 'pcm_s32le']},
-    FILENAME = r"./testing/sample_film.mp4"
-    with CutOut(FILENAME) as audioFile:
-        audioFile.getSubtitles()
-        #print(audioFile.reader.nframes)
-    # CutOut(FILENAME).write_speakingFile("new_file.mp3")
 
-
-if __name__ == "__main__":
-    main()
