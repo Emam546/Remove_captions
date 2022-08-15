@@ -87,7 +87,6 @@ class CutOut(AudioFileClip, sr.AudioSource):
                             break
                         res:str = listener.recognize_google(data)
                         if fix_time and res and res.replace(" ","") !=old_res.replace(" ",""):
-                            print("res detected")
                             old_res+=res+" "
                             old_data=data.frame_data
                             continue
@@ -103,7 +102,6 @@ class CutOut(AudioFileClip, sr.AudioSource):
                     currentSecond = int(self.stream.currentFrame*(1/self.fps))
                     time = orgTime+timedelta(seconds=currentSecond)
                     if res:
-                        print("add subtitle")
                         f.add_time(res, lastTime, time)
                     old_data=b""
                     old_res=""

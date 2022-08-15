@@ -1,3 +1,4 @@
+import os,sys
 from voice_recognition import CutOut
 def main():
     FILENAME = r"./testing/sample_film.mp4"
