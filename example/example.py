@@ -1,4 +1,4 @@
-from remvoeCaption import *
+from removeCaption import *
 import random
 
 
