@@ -98,7 +98,7 @@ class CutOut(AudioFileClip, sr.AudioSource):
                         pass
                     except Exception as e:
                         print(str(e))
-                    if (fix_time):
+                    if fix_time:
                         res = old_res
 
                     currentSecond = int(self.stream.currentFrame*(1/self.fps))
@@ -107,6 +107,7 @@ class CutOut(AudioFileClip, sr.AudioSource):
                         f.add_time(res, lastTime, time)
                     old_data = b""
                     old_res = ""
+                    res=""
                     progressBar(currentSecond)
                     lastTime = time
                     if self.stream.currentFrame > self.stream.numFrames:
